@@ -3,6 +3,7 @@ package com.example.lab_week_09
 import android.R.attr.onClick
 import android.R.id.input
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key.Companion.Home
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +42,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.lab_week_09.ui.theme.LAB_WEEK_09Theme
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.KotlinJsonAdapterFactory
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 // Data class student (state)
 data class Student(
@@ -85,6 +93,15 @@ fun Home (
     // Mutable state of Student, buat dapetin value dari input field
     var inputField = remember { mutableStateOf(Student("")) }
 
+    // Kasih context supaya bisa bikin dialog Toast
+    val context = LocalContext.current
+
+    val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+    val listType = Types.newParameterizedType(List::class.java, Student::class.java)
+    val adapter: JsonAdapter<List<Student>> = moshi.adapter(listType)
+
     HomeContent(
         listData,
         inputField.value,
@@ -95,10 +112,22 @@ fun Home (
             if (inputField.value.name.isNotBlank()) {
                 listData.add(inputField.value)
                 inputField.value = Student("")
+            } else {
+                Toast.makeText(context, "Text field cannot be empty!", Toast.LENGTH_SHORT).show()
             }
         },
+        {
         // Lambda function untuk navigate ke ResultContent composable dan pass listData sebagai parameter
-        {navigateFromHomeToResult(listData.toList().toString()) }
+
+        // Convert list ke JSON String
+        val jsonString = adapter.toJson(listData.toList())
+
+        // URL-Encode the Json String biar aman buat navigasi
+        val encodedJsonString = URLEncoder.encode(jsonString, StandardCharsets.UTF_8.name())
+
+        navigateFromHomeToResult(encodedJsonString)
+
+        }
     )
 
 }
@@ -224,8 +253,8 @@ fun App(navController : NavHostController) {
 
         composable("home") {
             // Pass lambda function untuk navigate ke "resultContent" dan pass list data sebagai parameter
-            Home { navController.navigate(
-                "resultContent/?listData=$it")
+            Home { encodedJson -> navController.navigate(
+                "resultContent/?listData=$encodedJson")
             }
         }
 
@@ -245,12 +274,41 @@ fun App(navController : NavHostController) {
 
 @Composable
 fun ResultContent(listData: String) {
-    Column(
-        modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
+    // Setup Moshi
+    val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+    val listType = Types.newParameterizedType(List::class.java, Student::class.java)
+    val adapter: JsonAdapter<List<Student>> = moshi.adapter(listType)
+
+    val studentList: List<Student> = try {
+        if(listData.isNotBlank()) {
+            adapter.fromJson(listData) ?: emptyList()
+        } else {
+            emptyList()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        emptyList()
+    }
+
+    LazyColumn(
+        modifier = Modifier.padding(vertical = 16.dp).fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Panggil UI Element Background item text
-        OnBackgroundItemText(text = listData)
+       item {
+           OnBackgroundItemText(text = "Results")
+       }
+
+        // Pakai studentlist yang sudah di parsed
+        items(studentList) { student ->
+            Column(
+                modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OnBackgroundItemText(text = student.name)
+            }
+        }
     }
 }
 
