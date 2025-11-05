@@ -13,10 +13,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -25,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key.Companion.Home
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -104,7 +107,8 @@ fun HomeContent(
                 // Mengatur supaya colum align horizontal
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = stringResource(
+                // Tampill text UI elemet
+                OnBackgroundTitleText(text = stringResource(
                     id = R.string.enter_item)
                 )
 
@@ -123,14 +127,11 @@ fun HomeContent(
                     }
                 )
 
-                Button(onClick = {
-                    // Panggil function onButtonClick di lambda function parameter ke 4
+                // Panggil PrimaryTextButton UI Element
+                PrimaryTextButton(text = stringResource(
+                    id = R.string.button_click)
+                ) {
                     onButtonClick()
-                }) {
-                    // Ganti button text dengan string yang di strings.xml
-                    Text(text = stringResource(
-                        id = R.string.button_click)
-                    )
                 }
             }
         }
@@ -142,10 +143,51 @@ fun HomeContent(
                 modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = item.name)
+                OnBackgroundItemText(text = item.name)
             }
 
         }
+    }
+}
+
+// Composable buat UI element buat nampilin title
+@Composable
+fun OnBackgroundTitleText(text: String) {
+    TitleText(text = text, color = MaterialTheme.colorScheme.onBackground)
+}
+
+@Composable
+fun TitleText(text: String, color: Color) {
+    // TitleLarge buat gedein textnya
+    Text(text = text, style = MaterialTheme.typography.titleLarge, color = color)
+}
+
+// Composable buat UI elemet nampilin item text
+@Composable
+fun OnBackgroundItemText(text: String) {
+    ItemText(text = text, color = MaterialTheme.colorScheme.onBackground)
+}
+
+@Composable
+fun ItemText(text: String, color: Color) {
+    Text(text = text, style = MaterialTheme.typography.bodySmall, color = color)
+}
+
+// Composable UI element buat nampilin button
+@Composable
+fun PrimaryTextButton(text: String, onClick: () -> Unit) {
+    TextButton(text = text, textColor = Color.White, onClick = onClick)
+}
+
+@Composable
+fun TextButton(text: String, textColor: Color, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.padding(8.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray, contentColor = textColor)
+
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelMedium)
     }
 }
 
