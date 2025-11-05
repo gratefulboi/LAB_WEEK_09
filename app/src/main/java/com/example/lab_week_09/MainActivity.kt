@@ -33,6 +33,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.lab_week_09.ui.theme.LAB_WEEK_09Theme
 
 // Data class student (state)
@@ -52,7 +58,10 @@ class MainActivity : ComponentActivity() {
                    modifier = Modifier.fillMaxSize(),
                    color = MaterialTheme.colorScheme.background
                ) {
-                   Home()
+                   val navController = rememberNavController()
+                   App (
+                       navController = navController
+                   )
                }
             }
         }
@@ -61,7 +70,9 @@ class MainActivity : ComponentActivity() {
 
 //Composable mirip Komponen di reactjs
 @Composable
-fun Home ()
+fun Home (
+    navigateFromHomeToResult: (String) -> Unit
+)
 {
     val listData = remember {
         mutableStateListOf(
@@ -85,7 +96,9 @@ fun Home ()
                 listData.add(inputField.value)
                 inputField.value = Student("")
             }
-        }
+        },
+        // Lambda function untuk navigate ke ResultContent composable dan pass listData sebagai parameter
+        {navigateFromHomeToResult(listData.toList().toString()) }
     )
 
 }
@@ -96,7 +109,8 @@ fun HomeContent(
     listData: SnapshotStateList<Student>,
     inputField: Student,
     onInputValueChange: (String) -> Unit,
-    onButtonClick: () -> Unit
+    onButtonClick: () -> Unit,
+    navigateFromHomeToResult: () -> Unit
     ) {
     // Pake lazy column untuk display list of item lazily (Mirip recyclerview)
     LazyColumn {
@@ -132,6 +146,13 @@ fun HomeContent(
                     id = R.string.button_click)
                 ) {
                     onButtonClick()
+                }
+
+                // Bikin finish button buat pindah ke navigation to result
+                PrimaryTextButton(text = stringResource(
+                    id = R.string.button_navigate)
+                ) {
+                    navigateFromHomeToResult()
                 }
             }
         }
@@ -188,6 +209,48 @@ fun TextButton(text: String, textColor: Color, onClick: () -> Unit) {
 
     ) {
         Text(text = text, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+// Ini root composable dari app
+@Composable
+fun App(navController : NavHostController) {
+    // Pake NavHost buat bikin navigation graph
+    // Pass NavController ke parameter dan juga startDestination ke home (Pake home composable)
+    NavHost(
+        navController = navController,
+        startDestination = "home"
+    ) {
+
+        composable("home") {
+            // Pass lambda function untuk navigate ke "resultContent" dan pass list data sebagai parameter
+            Home { navController.navigate(
+                "resultContent/?listData=$it")
+            }
+        }
+
+        composable(
+            "resultContent/?listData={listData}",
+            arguments = listOf(navArgument("listData") {
+                type = NavType.StringType }
+            )
+        ) {
+            // Pass value dari argumen ke ResultContent composable
+            ResultContent(
+                it.arguments?.getString("listData").orEmpty()
+            )
+        }
+    }
+}
+
+@Composable
+fun ResultContent(listData: String) {
+    Column(
+        modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Panggil UI Element Background item text
+        OnBackgroundItemText(text = listData)
     }
 }
 
